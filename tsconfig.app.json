@@ -1,0 +1,57 @@
+{
+  "include": [
+    "env.d.ts", 
+    "src/*.ts",
+    "src/**/*", 
+    "src/**/*.vue",
+    "src/**/*.json",
+     "eslint.config.*",
+  ],
+  "exclude": ["src/**/__tests__/*"],
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    
+    // add so we don't need to use 'type' for type imports
+    "verbatimModuleSyntax": false,
+    
+    // Option 'baseUrl' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '"ignoreDeprecations": "6.0"' to silence this error.
+    // Visit https://aka.ms/ts6 for migration information.ts
+    // Per-instructions, we can just remove it, and make sure
+    // it is specified on the paths, which is already is
+    //"baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    
+    // keep tsconfig from vue-ds-template
+    "target": "es6", // ES2015
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "importHelpers": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true, // doesn't work for vue-tsc --build
+    "sourceMap": true,
+    "outDir": "dist",
+    "noImplicitAny": false,
+    "resolveJsonModule": true,
+    "noUncheckedSideEffectImports": false,
+    // lib declaration overrides what is set by vue-tsconfig (es2020)
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6",
+      "ES2015",
+      "ES2017",
+      "ES2018.Promise"
+    ],
+    
+    // recommended by https://www.typescriptlang.org/docs/handbook/modules/guides/choosing-compiler-options.html#im-using-a-bundler
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+  }
+}

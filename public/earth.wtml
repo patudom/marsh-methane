@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The engine only builds its Blue Marble imageset when it is booted with
+     startMode: "earth", and engine-pinia's <WorldWideTelescope> never passes
+     that. So the Earth imageset is declared here instead and loaded at
+     runtime. Values match the engine's own recipe (WWTControl.initControl6,
+     engine/src/index.js) so the tiles resolve identically. -->
+<Folder Name="Earth" Group="Explorer" Searchable="False" Type="Earth">
+  <Place Name="Blue Marble" DataSetType="Earth" Lat="0" Lng="0" ZoomLevel="360" Opacity="100" Thumbnail="http://www.worldwidetelescope.org/wwtweb/thumbnail.aspx?name=bm200407">
+    <ForegroundImageSet>
+      <ImageSet
+        Name="Blue Marble"
+        DataSetType="Earth"
+        ReferenceFrame="Earth"
+        BandPass="Visible"
+        Url="http://www.worldwidetelescope.org/wwtweb/tiles.aspx?q={1},{2},{3},bm200407"
+        TileLevels="7"
+        BaseTileLevel="0"
+        BaseDegreesPerTile="180"
+        FileType=".png"
+        Projection="Toast"
+        BottomsUp="False"
+        CenterX="0"
+        CenterY="0"
+        OffsetX="0"
+        OffsetY="0"
+        Rotation="0"
+        Sparse="False"
+        ElevationModel="False"
+        MeanRadius="6371000"
+        WidthFactor="1"
+        StockSet="False"
+        Generic="False"
+        ThumbnailUrl="http://www.worldwidetelescope.org/wwtweb/thumbnail.aspx?name=bm200407">
+        <Credits>NASA Earth Observatory / Blue Marble Next Generation</Credits>
+        <CreditsUrl>https://visibleearth.nasa.gov/collection/1484/blue-marble</CreditsUrl>
+      </ImageSet>
+    </ForegroundImageSet>
+  </Place>
+</Folder>

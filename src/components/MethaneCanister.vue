@@ -4,26 +4,47 @@
       class="canister-svg"
       viewBox="0 0 140 200"
       role="img"
-      :aria-label="`${bubbleCount} methane molecules bubbling out of the marsh`"
+      :aria-label="`${moleculeCount} methane molecules in the marsh container`"
     >
-      <!-- Escaping arrow, above the open top. -->
+      <!-- The cylinder is drawn back-to-front: far rim, body, sediment, then
+           near rim, so the sediment sits inside the glass rather than on it. -->
+
+      <!-- Far half of the bottom ellipse, faint: it reads through the glass. -->
       <path
-        d="M 104 30 C 112 14 124 10 132 12 M 132 12 L 124 16 M 132 12 L 130 21"
+        d="M 22 178 A 45 7 0 0 1 112 178"
         fill="none"
-        stroke="#d94f3d"
-        stroke-width="3"
-        stroke-linecap="round"
+        stroke="#5aa9d6"
+        stroke-width="2"
+        opacity="0.45"
       />
 
-      <!-- Beaker: open at the top, so the molecules read as escaping. -->
+      <!-- Body: straight sides closed by the near half of the bottom ellipse. -->
       <path
-        d="M 22 26 L 22 178 A 6 6 0 0 0 28 184 L 106 184 A 6 6 0 0 0 112 178 L 112 26"
+        d="M 22 26 L 22 178 A 45 7 0 0 0 112 178 L 112 26"
         fill="rgba(79, 163, 209, 0.10)"
         stroke="#5aa9d6"
         stroke-width="3"
         stroke-linejoin="round"
       />
-      <!-- Elliptical rim. -->
+
+      <!-- Marsh sediment, clipped to the cylinder so it takes the curved base. -->
+      <g clip-path="url(#cylinder-clip)">
+        <rect
+          x="22"
+          y="150"
+          width="90"
+          height="40"
+          fill="#3d3325"
+        />
+      </g>
+      <path
+        d="M 22 150 Q 45 143 67 150 T 112 150"
+        fill="none"
+        stroke="#6b5a3e"
+        stroke-width="2.5"
+      />
+
+      <!-- Open rim last, so it sits in front of everything inside. -->
       <ellipse
         cx="67"
         cy="26"
@@ -34,31 +55,63 @@
         stroke-width="3"
       />
 
-      <!-- Marsh sediment the methane comes out of. -->
-      <path
-        d="M 22 150 L 22 178 A 6 6 0 0 0 28 184 L 106 184 A 6 6 0 0 0 112 178 L 112 150 Z"
-        fill="#3d3325"
-      />
-      <path
-        d="M 22 150 Q 45 143 67 150 T 112 150"
-        fill="none"
-        stroke="#6b5a3e"
-        stroke-width="2.5"
-      />
+      <defs>
+        <clipPath id="cylinder-clip">
+          <!-- Rect plus bottom ellipse union to the cylinder silhouette. -->
+          <rect
+            x="22"
+            y="26"
+            width="90"
+            height="152"
+          />
+          <ellipse
+            cx="67"
+            cy="178"
+            rx="45"
+            ry="7"
+          />
+        </clipPath>
+      </defs>
 
-      <g class="bubbles">
-        <circle
-          v-for="bubble in bubbles"
-          :key="bubble.id"
-          class="bubble"
-          :cx="bubble.x"
-          :r="bubble.r"
-          cy="0"
+      <!-- One cartoon CH4 per molecule: a carbon with four hydrogens. The outer
+           group places and rotates it, the inner one bobs, so the two
+           transforms do not fight. -->
+      <g
+        v-for="molecule in molecules"
+        :key="molecule.id"
+        :transform="`translate(${molecule.x} ${molecule.y}) rotate(${molecule.rotation})`"
+      >
+        <g
+          class="molecule"
           :style="{
-            animationDuration: `${bubble.duration}s`,
-            animationDelay: `${bubble.delay}s`,
+            animationDuration: `${molecule.duration}s`,
+            animationDelay: `${molecule.delay}s`,
           }"
-        />
+        >
+          <line
+            v-for="(hydrogen, index) in HYDROGENS"
+            :key="`bond-${index}`"
+            class="molecule-bond"
+            x1="0"
+            y1="0"
+            :x2="hydrogen.x"
+            :y2="hydrogen.y"
+          />
+          <circle
+            v-for="(hydrogen, index) in HYDROGENS"
+            :key="`h-${index}`"
+            class="molecule-hydrogen"
+            :cx="hydrogen.x"
+            :cy="hydrogen.y"
+            r="1.9"
+          />
+          <circle
+            class="molecule-carbon"
+            cx="0"
+            cy="0"
+            r="3.9"
+          />
+        </g>
       </g>
     </svg>
 
@@ -80,48 +133,108 @@
 import { computed } from "vue";
 
 const props = withDefaults(defineProps<{
-  /** Emission as a multiple of the baseline emission. Drives the bubble count. */
+  /** Emission as a multiple of the baseline emission. Drives the molecule count. */
   fluxRatio: number;
   /** CH4 molecules leaving a square metre of marsh each second, for the readout. */
   moleculesPerM2PerSec: number;
-  /** How many bubbles a flux ratio of 1 draws. */
-  bubblesAtBaseline?: number;
-  /** Ceiling on the bubble count, so a hot run stays drawable. */
-  maxBubbles?: number;
+  /** How many molecules a flux ratio of 1 draws. */
+  moleculesAtBaseline?: number;
 }>(), {
-  bubblesAtBaseline: 9,
-  maxBubbles: 60,
+  moleculesAtBaseline: 9,
 });
 
-const bubbleCount = computed(() => {
-  const n = Math.round(props.bubblesAtBaseline * props.fluxRatio);
-  return Math.max(0, Math.min(props.maxBubbles, n));
+/** Hydrogen offsets from the carbon, in viewBox units. */
+const HYDROGENS = [
+  { x: 0, y: -6.4 },
+  { x: 6.4, y: 0 },
+  { x: 0, y: 6.4 },
+  { x: -6.4, y: 0 },
+];
+
+// The interior the molecules may occupy: inside the glass, above the sediment,
+// inset by roughly one molecule radius so none straddles a wall. The grid is
+// sized so a whole molecule fits inside one cell, which is what keeps
+// neighbours from overlapping.
+const COLUMNS = 4;
+const ROWS = 5;
+const X_MIN = 30, X_MAX = 104;
+const Y_MIN = 38, Y_MAX = 142;
+
+/** Ceiling on the count: one molecule per cell of the placement grid. */
+const MAX_MOLECULES = COLUMNS * ROWS;
+
+const moleculeCount = computed(() => {
+  const n = Math.round(props.moleculesAtBaseline * props.fluxRatio);
+  return Math.max(0, Math.min(MAX_MOLECULES, n));
 });
 
-/**
- * Bubble positions come from a hash of the index rather than Math.random, so a
- * bubble keeps its lane when the count changes. With random values every
- * bubble would jump each time the user moved the temperature.
- */
+/** Deterministic hash, so a molecule keeps its spot when the count changes. */
 function pseudoRandom(seed: number): number {
   const x = Math.sin(seed * 12.9898) * 43758.5453;
   return x - Math.floor(x);
 }
 
-const bubbles = computed(() => {
-  return Array.from({ length: bubbleCount.value }, (_, i) => {
-    const a = pseudoRandom(i + 1);
-    const b = pseudoRandom(i + 101);
-    const c = pseudoRandom(i + 211);
-    return {
-      id: i,
-      x: 32 + a * 70,
-      r: 3 + b * 4,
-      duration: 3.2 + c * 2.6,
-      delay: -(a + b) * 3.5, // negative: the column is already full on load
-    };
-  });
-});
+interface MoleculePosition {
+  x: number;
+  y: number;
+  rotation: number;
+  duration: number;
+  delay: number;
+}
+
+/**
+ * A fixed pool of scattered positions, taken in order.
+ *
+ * Jittered grid rather than plain random placement: with pure random x and y a
+ * dozen molecules clump and overlap badly at this size. One per cell keeps them
+ * apart, and the jitter stops it reading as a grid. The pool is built once and
+ * the draw takes the first N, so raising the count adds molecules without
+ * moving the ones already on screen.
+ */
+const POSITIONS = (() => {
+  const cellWidth = (X_MAX - X_MIN) / COLUMNS;
+  const cellHeight = (Y_MAX - Y_MIN) / ROWS;
+
+  const cells: MoleculePosition[] = [];
+  for (let row = 0; row < ROWS; row++) {
+    for (let column = 0; column < COLUMNS; column++) {
+      const index = row * COLUMNS + column;
+      cells.push({
+        x: X_MIN + (column + 0.5) * cellWidth + (pseudoRandom(index + 1) - 0.5) * cellWidth * 0.35,
+        y: Y_MIN + (row + 0.5) * cellHeight + (pseudoRandom(index + 71) - 0.5) * cellHeight * 0.35,
+        rotation: pseudoRandom(index + 141) * 90,
+        duration: 3.4 + pseudoRandom(index + 211) * 2.8,
+        delay: -pseudoRandom(index + 281) * 5,
+      });
+    }
+  }
+
+  /* Farthest-point ordering, so that *every* prefix of the pool is spread
+     through the container. A plain hash shuffle also scatters the cells, but
+     any given prefix of it can come out lopsided -- twelve molecules crowding
+     one corner and leaving another empty, which is what it did here. Greedily
+     taking the cell farthest from everything already placed fixes that at all
+     counts, and 20 cells makes the quadratic cost irrelevant. */
+  const ordered: MoleculePosition[] = [cells.splice(9, 1)[0]]; // start mid-grid
+  while (cells.length > 0) {
+    let bestIndex = 0;
+    let bestDistance = -1;
+    cells.forEach((candidate, i) => {
+      const nearest = Math.min(...ordered.map((placed) =>
+        (placed.x - candidate.x) ** 2 + (placed.y - candidate.y) ** 2));
+      if (nearest > bestDistance) {
+        bestDistance = nearest;
+        bestIndex = i;
+      }
+    });
+    ordered.push(cells.splice(bestIndex, 1)[0]);
+  }
+  return ordered;
+})();
+
+const molecules = computed(() =>
+  POSITIONS.slice(0, moleculeCount.value).map((position, i) => ({ id: i, ...position }))
+);
 
 const formattedMolecules = computed(() => {
   const exponent = Math.floor(Math.log10(props.moleculesPerM2PerSec));
@@ -144,39 +257,45 @@ const formattedMolecules = computed(() => {
   height: auto;
 }
 
-.bubble {
-  fill: rgba(217, 89, 38, 0.25);
-  stroke: #f0a878;
-  stroke-width: 1.6;
-  animation-name: bubble-rise;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+.molecule-carbon {
+  fill: #d95926;
+  stroke: #7d2d12;
+  stroke-width: 1;
 }
 
-/* Rises from the sediment surface (y=150) out through the open rim and away.
-   Fades at the top so molecules leave rather than pile up at the edge. */
-@keyframes bubble-rise {
-  0% {
-    transform: translateY(150px);
-    opacity: 0;
+.molecule-hydrogen {
+  fill: #ffd9c2;
+  stroke: #b9713f;
+  stroke-width: 0.9;
+}
+
+.molecule-bond {
+  stroke: #f0a878;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* Drifting in place rather than rising in a column: the molecules are spread
+   through the container, so a shared upward sweep would undo that. */
+.molecule {
+  animation-name: molecule-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@keyframes molecule-drift {
+  from {
+    transform: translate(-1.5px, 2.5px);
   }
-  12% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(8px);
-    opacity: 0;
+  to {
+    transform: translate(1.5px, -2.5px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble {
+  .molecule {
     animation: none;
-    transform: translateY(90px);
-    opacity: 1;
   }
 }
 

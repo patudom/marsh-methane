@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Folder Browseable="True" Group="Explorer" Name="SSP245 2030 - warming vs 1995-2014" Searchable="True">
+  <ImageSet BandPass="Visible" BaseDegreesPerTile="180" BaseTileLevel="0" BottomsUp="False" CenterX="0" CenterY="0" DataSetType="Earth" ElevationModel="False" FileType=".png" Generic="False" Name="SSP245 2030 - warming vs 1995-2014" Projection="Toast" QuadTreeMap="" ReferenceFrame="Earth" Rotation="0" Sparse="True" StockSet="False" TileLevels="5" Url="{1}/{3}/{3}_{2}.png" WidthFactor="2">
+    <Credits>Pattern-scaled from a coupled CH4-temperature box model. PATTERN IS SYNTHETIC - not derived from CMIP6.</Credits>
+    <ThumbnailUrl>thumb.jpg</ThumbnailUrl>
+  </ImageSet>
+</Folder>

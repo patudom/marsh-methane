@@ -1,0 +1,20 @@
+{
+  "name": "ch4-feedback-model",
+  "version": "1.1.0",
+  "description": "Coupled CH4/temperature feedback model with CONUS pattern-scaled maps, driven by CMIP6 SSP pathways",
+  "type": "module",
+  "main": "bundle/ch4feedback.js",
+  "exports": {
+    ".": "./bundle/ch4feedback.js",
+    "./map": "./map/ch4map.js"
+  },
+  "scripts": {
+    "validate": "node bundle/validate.mjs",
+    "validate:map": "node map/validate_map.mjs",
+    "validate:all": "npm run validate && npm run validate:map",
+    "example": "node bundle/example.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "dependencies": {}
+}

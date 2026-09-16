@@ -1,0 +1,17 @@
+{
+  "name": "ch4feedback",
+  "version": "1.0.0",
+  "description": "Coupled CH4/temperature feedback model driven by CMIP6 SSP pathways",
+  "type": "module",
+  "main": "ch4feedback.js",
+  "exports": { ".": "./ch4feedback.js" },
+  "files": ["ch4feedback.js", "ssp-ch4-feedback.json", "README.md"],
+  "scripts": {
+    "validate": "node validate.mjs",
+    "example": "node example.mjs",
+    "build": "python3 build_bundle.py"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "dependencies": {}
+}

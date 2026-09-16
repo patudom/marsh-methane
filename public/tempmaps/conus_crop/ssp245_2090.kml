@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <GroundOverlay>
+    <name>ssp245_2090 CONUS</name>
+    <description></description>
+    <Icon><href>ssp245_2090.png</href></Icon>
+    <LatLonBox>
+      <north>49.75</north><south>23.75</south><east>-66.25</east><west>-125.25</west>
+    </LatLonBox>
+  </GroundOverlay>
+</kml>

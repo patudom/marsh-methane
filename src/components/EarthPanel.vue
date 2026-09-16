@@ -4,6 +4,7 @@
          control object in a module global, so two views need two JS realms.
          See vite.config.mts. -->
     <iframe
+      ref="frameEl"
       class="earth-frame"
       :src="frameSrc"
       :title="`Earth, ${scenarioText}`"
@@ -35,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = withDefaults(defineProps<{
   /** Warming this globe represents, deg C by 2100 relative to 2026. */
@@ -52,12 +53,18 @@ const props = withDefaults(defineProps<{
   layerUnit?: string;
   /** Caveat line, e.g. when the warming level sits outside the published range. */
   layerNote?: string;
+  /**
+   * Temperature map to drape over the globe, named as in
+   * public/tempmaps/index_rel.wtml, e.g. "SSP245 2100". Fixed per globe.
+   */
+  imagesetName?: string;
   /** Camera centre. Defaults to the marsh, set by the iframe page. */
   latDeg?: number;
   lonDeg?: number;
 }>(), {
   layerUnit: "",
   layerNote: "",
+  imagesetName: "",
   latDeg: undefined,
   lonDeg: undefined,
 });
@@ -74,17 +81,41 @@ const formattedDelta = computed(() =>
   `${props.deltaTC < 0 ? "−" : ""}${Math.abs(props.deltaTC).toFixed(2)}`);
 
 /**
- * Built once and never changed. Putting reactive state in the iframe URL would
- * reload the page and re-download the engine on every model tick, so the globes
- * are static and the overlays carry the changing numbers.
+ * Built once from the props' initial values and never recomputed, so the iframe
+ * never reloads. Later layer changes go over postMessage instead; a src change
+ * would re-download the 1.5 MB engine on every toggle click.
  */
-const frameSrc = computed(() => {
+const frameSrc = (() => {
   const params = new URLSearchParams();
   if (props.latDeg !== undefined) { params.set("lat", String(props.latDeg)); }
   if (props.lonDeg !== undefined) { params.set("lon", String(props.lonDeg)); }
   const query = params.toString();
   return query.length > 0 ? `earth-view.html?${query}` : "earth-view.html";
-});
+})();
+
+const frameEl = ref<HTMLIFrameElement | null>(null);
+
+/** An empty name is meaningful: it puts the globe back to bare Blue Marble. */
+function sendLayer() {
+  frameEl.value?.contentWindow?.postMessage(
+    { type: "set-layer", name: props.imagesetName },
+    window.location.origin,
+  );
+}
+
+/* The iframe announces itself when its listener is live. Without that handshake
+   a layer change that lands before the engine is ready is silently dropped. */
+function onFrameReady(event: MessageEvent) {
+  if (event.origin !== window.location.origin) return;
+  if ((event.data as { type?: string } | null)?.type !== "earth-view-ready") return;
+  if (event.source !== frameEl.value?.contentWindow) return;
+  sendLayer();
+}
+
+onMounted(() => window.addEventListener("message", onFrameReady));
+onBeforeUnmount(() => window.removeEventListener("message", onFrameReady));
+
+watch(() => props.imagesetName, sendLayer);
 </script>
 
 <style lang="less">

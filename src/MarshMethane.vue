@@ -48,6 +48,7 @@
         <div class="globes-row">
           <EarthPanel
             scenario="no-feedback"
+            :imageset-name="leftImageset"
             :delta-t-c="endState.imposedAnomalyC"
             :layer-name="selectedImpact.label"
             :layer-year="layerYear"
@@ -57,6 +58,7 @@
           />
           <EarthPanel
             scenario="with-feedback"
+            :imageset-name="rightImageset"
             :delta-t-c="endState.globalAnomalyC"
             :layer-name="selectedImpact.label"
             :layer-year="layerYear"
@@ -98,17 +100,25 @@ const YEAR_INTERVAL_MS = 120;
 
 /** Warming by 2100 relative to 2026, excluding the methane feedback. */
 const targetDeltaT = ref(2);
-const impactId = ref(IMPACTS[0].id);
+/** Extreme heat frequency is the opening impact; by id, not by list position. */
+const impactId = ref("hot-extremes");
 /** Which year's data layer both globes show. */
 const layerYear = ref(2100);
+/**
+ * Whether the temperature maps are on the globes yet. They are held back until
+ * the animation has run through to 2100, so the reveal is the payoff of playing
+ * rather than something already on screen.
+ */
+const revealed = ref(false);
 
 const run = computed<YearState[]>(() => runModel(targetDeltaT.value));
 
-/* Opens on 2100, not 2026. Every run now begins at zero warming, so opening on
-   the first year would show a thermometer at baseline and a flat chart while
-   both globes are labelled with the 2100 result. Starting at the end keeps the
-   whole screen telling one story; Reset plays it back from 2026. */
-const yearIndex = ref(run.value.length - 1);
+/* Back to opening on 2026. The globes now hold their temperature maps until the
+   run reaches 2100, and that gate only makes sense from a pre-play state: the
+   user presses Start, the years advance, and the data arrives on arrival. The
+   globe headers and the impact panel still track the dropdown immediately, so
+   the control is not inert while the animation sits at the start. */
+const yearIndex = ref(0);
 const running = ref(false);
 /** Whether the user has actually played the animation, for the button label. */
 const hasRun = ref(false);
@@ -158,6 +168,27 @@ const leftLayer = computed(() =>
 const rightLayer = computed(() =>
   layerFor(layerYear.value === 2026 ? 0 : endState.value.globalAnomalyC));
 
+/**
+ * Which temperature map each globe draws, by toggle position. Names match
+ * public/tempmaps/index_abs.wtml.
+ *
+ * On 2026 both globes show the same 2030 map, which is the shared baseline. On
+ * 2100 they differ: 2075 stands in for the no-feedback case and 2100 for the
+ * with-feedback case, so the pair reads as the feedback pushing the world
+ * further along the same scenario.
+ *
+ * Both are withheld until `revealed`. An empty name puts the globe back to bare
+ * Blue Marble, so the maps arrive only once the run has played through to 2100.
+ */
+const leftImageset = computed(() => {
+  if (!revealed.value) return "";
+  return layerYear.value === 2026 ? "SSP245 2030" : "SSP245 2075";
+});
+const rightImageset = computed(() => {
+  if (!revealed.value) return "";
+  return layerYear.value === 2026 ? "SSP245 2030" : "SSP245 2100";
+});
+
 function stopTimer() {
   if (timer !== null) {
     window.clearInterval(timer);
@@ -173,6 +204,8 @@ function start() {
   hasRun.value = true;
   timer = window.setInterval(() => {
     if (yearIndex.value >= run.value.length - 1) {
+      // Arrived at 2100: this is what puts the maps on the globes.
+      revealed.value = true;
       pause();
       return;
     }
@@ -188,18 +221,13 @@ function pause() {
 function reset() {
   pause();
   hasRun.value = false;
+  revealed.value = false;
   yearIndex.value = 0;
 }
 
-/* Changing the scenario jumps to 2100 rather than back to 2026. Every run now
-   starts at zero warming, so resetting to the first year would leave the
-   thermometer, the canister and the chart identical for every choice and the
-   dropdown would look broken. Landing on the end state shows the consequence
-   immediately; Reset then plays it back from 2026. */
-watch(targetDeltaT, () => {
-  pause();
-  yearIndex.value = run.value.length - 1;
-});
+/* A new scenario means a new run, so it goes back to 2026 with the globes bare
+   and has to be played through again. */
+watch(targetDeltaT, () => reset());
 
 onBeforeUnmount(stopTimer);
 </script>

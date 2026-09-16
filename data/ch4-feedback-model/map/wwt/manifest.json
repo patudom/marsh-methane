@@ -1,0 +1,107 @@
+{
+ "scenario": "ssp245",
+ "field": "warming_vs_baseline",
+ "baseline": "1995-2014",
+ "label": "warming vs 1995-2014 [K]",
+ "color_scale": {
+  "kind": "sequential",
+  "domain_K": [
+   0.0,
+   2.95
+  ],
+  "symmetric": false,
+  "ramp": [
+   "#f0efec",
+   "#f1aea8",
+   "#ea9a93",
+   "#dd716a",
+   "#d75853",
+   "#b13f3c",
+   "#9e3432",
+   "#762221",
+   "#621b1a"
+  ],
+  "note": "fixed across all frames",
+  "chosen_because": "the field never crosses zero, so magnitude (sequential) is the right encoding"
+ },
+ "gamma_wetland": 20.0,
+ "model_params": {
+  "tau_base": 10.877804,
+  "e_nat": 155.676041,
+  "s_temperature": -0.0408,
+  "gamma_wetland": 20.0,
+  "gamma_permafrost": 0.0,
+  "ecs": 3.0,
+  "forcing_2co2": 3.93,
+  "c_surface": 7.3,
+  "c_deep": 106.0,
+  "kappa": 0.677,
+  "epsilon": 1.29,
+  "ozone_temp_feedback": -0.037,
+  "forcing_scale": 1.0
+ },
+ "pattern_synthetic": true,
+ "pattern_provenance": "THIS PATTERN IS SYNTHETIC. It is not derived from CMIP6 output. The land/ocean mask, state boundaries and both distance fields are real (Natural Earth 1:50m); the mapping from them to P is invented and calibrated to anchor values chosen to be consistent with published CMIP6 behaviour. Replace it with derive_pattern_from_cmip6.py before using any of this to make a claim about the real world.",
+ "conus_bbox_lonlat": [
+  -125.0,
+  24.0,
+  -66.5,
+  49.5
+ ],
+ "toast_depth": 5,
+ "canvas": {
+  "width": 4096,
+  "height": 2048,
+  "projection": "plate carree, lon -180 at left, lat +90 at top"
+ },
+ "years": {
+  "2030": {
+   "global_delta_K": 0.6996,
+   "conus_mean_K": 0.8802,
+   "conus_min_K": 0.6201,
+   "conus_max_K": 1.0006,
+   "domain_K": [
+    0.0,
+    2.95
+   ],
+   "platecarree_png": "platecarree/ssp245_2030.png",
+   "conus_crop_png": "conus_crop/ssp245_2030.png"
+  },
+  "2050": {
+   "global_delta_K": 1.2315,
+   "conus_mean_K": 1.5494,
+   "conus_min_K": 1.0914,
+   "conus_max_K": 1.7614,
+   "domain_K": [
+    0.0,
+    2.95
+   ],
+   "platecarree_png": "platecarree/ssp245_2050.png",
+   "conus_crop_png": "conus_crop/ssp245_2050.png"
+  },
+  "2075": {
+   "global_delta_K": 1.7416,
+   "conus_mean_K": 2.1913,
+   "conus_min_K": 1.5436,
+   "conus_max_K": 2.4911,
+   "domain_K": [
+    0.0,
+    2.95
+   ],
+   "platecarree_png": "platecarree/ssp245_2075.png",
+   "conus_crop_png": "conus_crop/ssp245_2075.png"
+  },
+  "2100": {
+   "global_delta_K": 2.0288,
+   "conus_mean_K": 2.5526,
+   "conus_min_K": 1.7981,
+   "conus_max_K": 2.9018,
+   "domain_K": [
+    0.0,
+    2.95
+   ],
+   "platecarree_png": "platecarree/ssp245_2100.png",
+   "conus_crop_png": "conus_crop/ssp245_2100.png"
+  }
+ }
+}

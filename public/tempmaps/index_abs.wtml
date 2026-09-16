@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Generated from index_rel.wtml. Absolute tile paths, because the
+     engine resolves relative ones against the site root and Vite answers
+     those with index.html instead of a 404. -->
+<Folder Browseable="True" Group="Explorer" Name="CH4 feedback - SSP245" Searchable="True">
+  <ImageSet BandPass="Visible" BaseDegreesPerTile="180" BaseTileLevel="0" BottomsUp="False" CenterX="0" CenterY="0" DataSetType="Earth" ElevationModel="False" FileType=".png" Generic="False" Name="SSP245 2030" Projection="Toast" QuadTreeMap="" ReferenceFrame="Earth" Rotation="0" Sparse="True" StockSet="False" TileLevels="5" Url="/tempmaps/ssp245_2030/{1}/{3}/{3}_{2}.png" WidthFactor="2">
+    <Credits>Pattern-scaled from a coupled CH4-temperature box model. PATTERN IS SYNTHETIC - not derived from CMIP6.</Credits>
+    <ThumbnailUrl>/tempmaps/ssp245_2030/thumb.jpg</ThumbnailUrl>
+  </ImageSet>
+  <ImageSet BandPass="Visible" BaseDegreesPerTile="180" BaseTileLevel="0" BottomsUp="False" CenterX="0" CenterY="0" DataSetType="Earth" ElevationModel="False" FileType=".png" Generic="False" Name="SSP245 2075" Projection="Toast" QuadTreeMap="" ReferenceFrame="Earth" Rotation="0" Sparse="True" StockSet="False" TileLevels="5" Url="/tempmaps/ssp245_2075/{1}/{3}/{3}_{2}.png" WidthFactor="2">
+    <Credits>Pattern-scaled from a coupled CH4-temperature box model. PATTERN IS SYNTHETIC - not derived from CMIP6.</Credits>
+    <ThumbnailUrl>/tempmaps/ssp245_2075/thumb.jpg</ThumbnailUrl>
+  </ImageSet>
+  <ImageSet BandPass="Visible" BaseDegreesPerTile="180" BaseTileLevel="0" BottomsUp="False" CenterX="0" CenterY="0" DataSetType="Earth" ElevationModel="False" FileType=".png" Generic="False" Name="SSP245 2100" Projection="Toast" QuadTreeMap="" ReferenceFrame="Earth" Rotation="0" Sparse="True" StockSet="False" TileLevels="5" Url="/tempmaps/ssp245_2100/{1}/{3}/{3}_{2}.png" WidthFactor="2">
+    <Credits>Pattern-scaled from a coupled CH4-temperature box model. PATTERN IS SYNTHETIC - not derived from CMIP6.</Credits>
+    <ThumbnailUrl>/tempmaps/ssp245_2100/thumb.jpg</ThumbnailUrl>
+  </ImageSet>
+</Folder>

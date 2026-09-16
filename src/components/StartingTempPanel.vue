@@ -3,10 +3,10 @@
     class="control-panel"
     @keydown.stop
   >
-    <h2 class="panel-title">Set starting temperature</h2>
+    <h2 class="panel-title">Temperature change by 2100</h2>
 
     <v-select
-      :model-value="startingAnomaly"
+      :model-value="targetDeltaT"
       :items="options"
       item-title="label"
       item-value="value"
@@ -15,7 +15,7 @@
       hide-details
       class="temp-select"
       :disabled="running"
-      @update:model-value="(v: number) => emit('update:startingAnomaly', v)"
+      @update:model-value="(v: number) => emit('update:targetDeltaT', v)"
     />
 
     <div class="panel-buttons">
@@ -47,8 +47,11 @@
 
 <script setup lang="ts">
 defineProps<{
-  /** Starting global temperature anomaly, deg C above the baseline state. */
-  startingAnomaly: number;
+  /**
+   * Warming by 2100 relative to 2026, deg C, excluding the methane feedback.
+   * This is the counterfactual the user is choosing, not a starting state.
+   */
+  targetDeltaT: number;
   /** The year currently being shown. */
   year: number;
   /** Whether the simulation is advancing. */
@@ -58,7 +61,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:startingAnomaly": [value: number];
+  "update:targetDeltaT": [value: number];
   start: [];
   pause: [];
   reset: [];
@@ -67,7 +70,11 @@ const emit = defineEmits<{
 // A short fixed list rather than a slider: these are the scenarios worth
 // talking about, and a dropdown matches the sketch.
 const options = [
-  { label: "Baseline (no extra warming)", value: 0 },
+  { label: "−2.0 °C", value: -2 },
+  { label: "−1.0 °C", value: -1 },
+  { label: "−0.5 °C", value: -0.5 },
+  { label: "Baseline (no change)", value: 0 },
+  { label: "+0.5 °C", value: 0.5 },
   { label: "+1.0 °C", value: 1 },
   { label: "+1.5 °C", value: 1.5 },
   { label: "+2.0 °C", value: 2 },
@@ -82,7 +89,9 @@ const options = [
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  width: 15rem;
+  /* Was 15rem inside a 16rem column, which left this card narrower than its
+     siblings and wrapped the longer title onto three lines. */
+  width: 100%;
   padding: 0.8rem;
   border-radius: 8px;
   background: rgba(10, 23, 22, 0.88);

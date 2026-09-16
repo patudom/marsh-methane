@@ -3,89 +3,160 @@
     id="app"
     :class="{ 'app-is-small': smallSize, 'app-is-portrait': isPortrait }"
   >
-    <div id="main-content">
-      <WorldWideTelescope :wwt-namespace="wwtNamespace"></WorldWideTelescope>
+    <div id="blocks">
+      <!-- Block 1: everything the user drives, plus every readout. -->
+      <section id="controls-block">
+        <StartingTempPanel
+          v-model:target-delta-t="targetDeltaT"
+          :year="current.year"
+          :running="running"
+          :started="hasRun"
+          @start="start"
+          @pause="pause"
+          @reset="reset"
+        />
 
-      <div id="wwt-overlay">
-        <div class="overlay-row overlay-top">
-          <StartingTempPanel
-            v-model:starting-anomaly="startingAnomaly"
-            :year="current.year"
-            :running="running"
-            :started="yearIndex > 0"
-            @start="start"
-            @pause="pause"
-            @reset="reset"
-          />
-
-          <div class="gauges">
-            <div class="gauge-card">
-              <Thermometer
-                :temperature="current.marshTempC"
-                :baseline="PARAMS.baselineMarshTempC"
-              />
-            </div>
-            <div class="gauge-card">
-              <MethaneCanister
-                :flux-ratio="current.fluxRatio"
-                :molecules-per-m2-per-sec="current.moleculesPerM2PerSec"
-              />
-            </div>
+        <div class="gauges">
+          <div class="gauge-card">
+            <Thermometer
+              :temperature="current.marshTempC"
+              :baseline="PARAMS.baselineMarshTempC"
+            />
           </div>
-        </div>
-
-        <div class="overlay-row overlay-bottom">
-          <div class="chart-card">
-            <MethaneChart
-              :series="shownSeries"
-              :baseline-ppb="PARAMS.baselineCh4Ppb"
+          <div class="gauge-card">
+            <MethaneCanister
+              :flux-ratio="current.fluxRatio"
+              :molecules-per-m2-per-sec="current.moleculesPerM2PerSec"
             />
           </div>
         </div>
+
+        <ImpactPanel
+          v-model:impact-id="impactId"
+          :anomaly-c="endState.globalAnomalyC"
+          :year="endState.year"
+        />
+
+        <div class="chart-card">
+          <MethaneChart :series="shownSeries" />
+        </div>
+      </section>
+
+      <!-- Blocks 2 and 3: the same 2100 scenario without and with the marsh
+           methane feedback, plus the shared layer toggle beneath them. -->
+      <div id="globes-block">
+        <div class="globes-row">
+          <EarthPanel
+            scenario="no-feedback"
+            :delta-t-c="endState.imposedAnomalyC"
+            :layer-name="selectedImpact.label"
+            :layer-year="layerYear"
+            :layer-value="leftLayer.value"
+            :layer-unit="leftLayer.unit"
+            :layer-note="leftLayer.note"
+          />
+          <EarthPanel
+            scenario="with-feedback"
+            :delta-t-c="endState.globalAnomalyC"
+            :layer-name="selectedImpact.label"
+            :layer-year="layerYear"
+            :layer-value="rightLayer.value"
+            :layer-unit="rightLayer.unit"
+            :layer-note="rightLayer.note"
+          />
+        </div>
+
+        <LayerToggle v-model:year="layerYear" />
       </div>
     </div>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useDisplay } from "vuetify";
 
 import StartingTempPanel from "./components/StartingTempPanel.vue";
 import Thermometer from "./components/Thermometer.vue";
 import MethaneCanister from "./components/MethaneCanister.vue";
 import MethaneChart from "./components/MethaneChart.vue";
+import ImpactPanel from "./components/ImpactPanel.vue";
+import EarthPanel from "./components/EarthPanel.vue";
+import LayerToggle from "./components/LayerToggle.vue";
 
 import { PARAMS, runModel, type YearState } from "./model";
-import { useEarthView } from "./composables/useEarthView";
-
-defineProps<{ wwtNamespace: string }>();
+import { IMPACTS, ar6LevelFor, impactAt, isExtrapolated } from "./impacts";
 
 const display = useDisplay();
 const smallSize = computed(() => display.smAndDown.value);
 const isPortrait = computed(() => display.height.value > display.width.value);
-
-// setupEarth awaits the engine's own ready promise, so it can be fired here
-// rather than watched for.
-const { setupEarth } = useEarthView();
-onMounted(() => { setupEarth(); });
 
 // --- the run ---------------------------------------------------------------
 
 /** How long one simulated year takes on screen, ms. */
 const YEAR_INTERVAL_MS = 120;
 
-const startingAnomaly = ref(2);
-const run = computed<YearState[]>(() => runModel(startingAnomaly.value));
+/** Warming by 2100 relative to 2026, excluding the methane feedback. */
+const targetDeltaT = ref(2);
+const impactId = ref(IMPACTS[0].id);
+/** Which year's data layer both globes show. */
+const layerYear = ref(2100);
 
-const yearIndex = ref(0);
+const run = computed<YearState[]>(() => runModel(targetDeltaT.value));
+
+/* Opens on 2100, not 2026. Every run now begins at zero warming, so opening on
+   the first year would show a thermometer at baseline and a flat chart while
+   both globes are labelled with the 2100 result. Starting at the end keeps the
+   whole screen telling one story; Reset plays it back from 2026. */
+const yearIndex = ref(run.value.length - 1);
 const running = ref(false);
+/** Whether the user has actually played the animation, for the button label. */
+const hasRun = ref(false);
 let timer: number | null = null;
 
 const current = computed(() => run.value[yearIndex.value] ?? run.value[0]);
 
+/** Both globes report the run's end state, whatever year the animation is on. */
+const endState = computed(() => run.value[run.value.length - 1]);
+
 /** Only the years reached so far, so the chart draws itself as time passes. */
 const shownSeries = computed(() => run.value.slice(0, yearIndex.value + 1));
+
+// --- the data layer on the globes -----------------------------------------
+
+const selectedImpact = computed(() => IMPACTS.find((i) => i.id === impactId.value) ?? IMPACTS[0]);
+
+/**
+ * The impact figure for one globe, formatted for its badge.
+ *
+ * Below the lowest published anchor the figure is withheld rather than shown.
+ * `impactAt` holds flat outside the anchors, which is the right choice for the
+ * readout panel but wrong on a badge labelled 2026: sea level rise would read
+ * "44 cm by 2100" against a 2026 heading, which is two kinds of wrong at once.
+ */
+function layerFor(deltaTC: number) {
+  const impact = selectedImpact.value;
+
+  if (ar6LevelFor(deltaTC) < impact.anchors[0].ar6WarmingC) {
+    return { value: "—", unit: "", note: "below the published range" };
+  }
+
+  const raw = impactAt(impact, deltaTC);
+  const shown = raw.toFixed(impact.precision);
+  return {
+    // An explicit plus where the metric can go either way, as in the panel.
+    value: raw > 0 && impact.anchors.some((a) => a.value < 0) ? `+${shown}` : shown,
+    unit: impact.unit,
+    note: isExtrapolated(impact, deltaTC) ? "held at the nearest studied level" : "",
+  };
+}
+
+/* On 2026 both globes sit at zero warming and therefore show the same figure,
+   which is the baseline half of the comparison. On 2100 they separate. */
+const leftLayer = computed(() =>
+  layerFor(layerYear.value === 2026 ? 0 : endState.value.imposedAnomalyC));
+const rightLayer = computed(() =>
+  layerFor(layerYear.value === 2026 ? 0 : endState.value.globalAnomalyC));
 
 function stopTimer() {
   if (timer !== null) {
@@ -96,8 +167,10 @@ function stopTimer() {
 
 function start() {
   if (running.value) return;
+  // Pressing Start while parked at 2100 replays from the beginning.
   if (yearIndex.value >= run.value.length - 1) { yearIndex.value = 0; }
   running.value = true;
+  hasRun.value = true;
   timer = window.setInterval(() => {
     if (yearIndex.value >= run.value.length - 1) {
       pause();
@@ -114,11 +187,19 @@ function pause() {
 
 function reset() {
   pause();
+  hasRun.value = false;
   yearIndex.value = 0;
 }
 
-// Changing the scenario restarts the run rather than jumping mid-curve.
-watch(startingAnomaly, () => reset());
+/* Changing the scenario jumps to 2100 rather than back to 2026. Every run now
+   starts at zero warming, so resetting to the first year would leave the
+   thermometer, the canister and the chart identical for every choice and the
+   dropdown would look broken. Landing on the end state shows the consequence
+   immediately; Reset then plays it back from 2026. */
+watch(targetDeltaT, () => {
+  pause();
+  yearIndex.value = run.value.length - 1;
+});
 
 onBeforeUnmount(stopTimer);
 </script>
@@ -154,9 +235,13 @@ body {
   font-family: "Source Sans 3", Helvetica, sans-serif;
 }
 
-#app > .v-application__wrap {
-  flex-direction: row;
-  max-height: 100svh;
+/* The mount point needs a height of its own. #app is `height: 100%`, and its
+   parent is this div rather than body -- a percentage against an auto-height
+   parent resolves to auto, which is why the blocks were sizing to their content
+   and leaving half the viewport empty. */
+#app-mount {
+  width: 100%;
+  height: 100%;
 }
 
 #app {
@@ -165,51 +250,66 @@ body {
   margin: 0;
   overflow: hidden;
   font-size: var(--default-font-size);
-
-  .wwtelescope-component {
-    position: absolute;
-    inset: 0;
-    border-style: none;
-    border-width: 0;
-    margin: 0;
-    padding: 0;
-  }
 }
 
-#main-content {
-  position: relative;
-  display: block;
-  flex: 1 1 auto;
+/* A definite height, not Vuetify's `min-height: 100vh`. #blocks is `height:
+   100%`, which resolves to nothing against a parent that sizes to its content
+   -- the globes then collapse to their min-height and leave the viewport
+   half empty. `min-height: 0` alone is not enough; the wrap needs a real
+   height for the percentage to bite. */
+#app > .v-application__wrap {
+  height: 100%;
+  min-height: 0;
+  max-height: 100svh;
+}
+
+/* The three blocks. Row in landscape, column in portrait -- that is the whole
+   layout. `min-width: 0` and `min-height: 0` on the children matter: without
+   them a flex item refuses to shrink below its content and the last block gets
+   pushed off screen. */
+#blocks {
+  display: flex;
+  flex-direction: row;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* pointer-events: none so drags fall through to the globe. Panels re-enable
-   it on themselves, and every row is content-sized -- an invisible full-height
-   remainder would swallow the drag. */
-#wwt-overlay {
-  position: absolute;
-  inset: 0;
-  padding: 1rem;
-  pointer-events: none;
-
+/* The controls block sizes to its content and scrolls if the viewport is too
+   short for it. The globes take what is left. */
+#controls-block {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 0.6rem;
+  width: 16rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
-.overlay-row {
+/* The globes and their shared toggle. Every one of these properties is
+   load-bearing: the iframes chain their height by percentage all the way up to
+   #blocks, so a container that sizes to its content collapses them to nothing.
+   Dropping `min-height: 0` alone is enough to break it. */
+#globes-block {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.overlay-bottom {
-  justify-content: flex-end;
-  align-items: flex-end;
+.globes-row {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: 0.6rem;
 }
 
 .gauges {
@@ -220,40 +320,72 @@ body {
 
 .gauge-card,
 .chart-card {
-  pointer-events: auto;
   padding: 0.7rem;
   border-radius: 8px;
   background: rgba(10, 23, 22, 0.88);
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(3px);
   color: var(--text-color);
 }
 
-.chart-card {
-  width: 22rem;
-  max-width: 100%;
+.gauge-card {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-/* Portrait and small screens: stack the gauges under the controls and let the
-   chart span the width, rather than three columns fighting over ~320px. */
-#app.app-is-portrait,
-#app.app-is-small {
-  #wwt-overlay {
-    padding: 0.6rem;
+/* Portrait: stack the blocks, and share the viewport between them rather than
+   letting the page scroll. The controls are much taller than a phone screen, so
+   if they kept their natural height both globes would sit below the fold and
+   the three-block layout would not be visible at all. Capping them at half the
+   height and scrolling inside keeps all three on screen. */
+#app.app-is-portrait #blocks {
+  flex-direction: column;
+  overflow: hidden;
+
+  /* Width is the abundant axis in portrait, so the four cards flow across it
+     instead of stacking. That roughly halves the block's height, which is what
+     keeps it inside its cap without the content looking clipped. On a phone
+     there is no width to flow into and they stack again, which is why the cap
+     and the inner scroll are still here. */
+  #controls-block {
+    flex: 0 1 auto;
+    width: 100%;
+    max-height: 50%;
+    min-height: 0;
+    overflow-y: auto;
+
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+
+    > * {
+      flex: 1 1 13rem;
+      min-width: 0;
+    }
   }
 
-  .overlay-top {
+  /* The globes stack in portrait. Without this they stay a row inside
+     .globes-row and become two tall slivers on a phone. */
+  .globes-row {
     flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
   }
 
-  .control-panel {
-    width: 100%;
+  /* Lower than the 7rem it used to be: two globes plus the toggle now share
+     the half of the viewport the controls leave, and the toggle is last, so it
+     is what gets clipped if the globes claim too much. */
+  .earth-panel {
+    flex: 1 1 0;
+    min-height: 5.5rem;
   }
+}
 
-  .chart-card {
-    width: 100%;
-  }
+/* Small screens are tight in both axes, so trim the padding and let the
+   controls run full width. */
+#app.app-is-small #blocks {
+  gap: 0.4rem;
+  padding: 0.4rem;
+}
+
+#app.app-is-small #controls-block {
+  width: 100%;
 }
 </style>

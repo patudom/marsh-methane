@@ -1,5 +1,6 @@
 // Utilities
 import { fileURLToPath, URL } from 'node:url';
+import { resolve, dirname } from 'node:path';
 import Vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
 
@@ -55,6 +56,20 @@ export default defineConfig({
       '.tsx',
       '.vue',
     ],
+  },
+  /* Two pages, not one. The WWT engine keeps its control object in a
+     module-level global (`globalWWTControl`), and engine-pinia's store links a
+     single instance -- `internalUnlinkFromInstance()` takes no argument. So two
+     WWT views cannot coexist in one JS realm. earth-view.html is loaded in an
+     iframe per globe, which gives each its own realm, its own engine and its
+     own camera. Both iframes share one bundle, so the engine downloads once. */
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(dirname(fileURLToPath(import.meta.url)), 'index.html'),
+        earthView: resolve(dirname(fileURLToPath(import.meta.url)), 'earth-view.html'),
+      },
+    },
   },
   server: {},
   css: {

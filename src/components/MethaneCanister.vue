@@ -304,10 +304,21 @@ const formattedMolecules = computed(() => {
   line-height: 1.2;
 }
 
+/* .readout-secondary is defined in Thermometer.vue with `white-space: nowrap`,
+   and component styles in this project are unscoped, so that rule reaches this
+   card too and pushed "baseline CH4 emission" past its border. Overridden here
+   rather than changed there, so the thermometer keeps its single line. */
+.canister .readout-secondary {
+  white-space: normal;
+}
+
+/* Allowed to wrap. In the three-block layout this card is about 8rem wide and
+   the molecular flux does not fit on one line, so nowrap clipped the last
+   characters against the card edge. */
 .readout-tertiary {
   font-size: 0.66rem;
   color: #8fa9ae;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  line-height: 1.25;
 }
 </style>

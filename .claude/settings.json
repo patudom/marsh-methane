@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn type-check *)",
+      "Bash(yarn build *)",
+      "Bash(yarn dev *)",
+      "Bash(yarn preview *)",
+      "Bash(yarn clean *)",
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
+}

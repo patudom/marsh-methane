@@ -67,6 +67,44 @@ function reaim() {
 let collectionLoaded = false;
 
 /**
+ * Loads the temperature-map collection, rewriting its tile paths first.
+ *
+ * The shipped WTML uses paths relative to itself, and the engine resolves them
+ * against the *page* instead, so the tiles are looked up one directory too high.
+ * Hardcoding a leading "/tempmaps/" fixed that locally and broke the deployed
+ * build, where the site lives under a repository subpath and the tiles 404.
+ *
+ * So the paths are made fully qualified here, against wherever the WTML
+ * actually is, and the patched document is handed to the engine as a blob. That
+ * works under any base, which is what `base: "./"` in vite.config.mts requires.
+ *
+ * Prefixed by string rather than through `new URL()` on purpose: the tile paths
+ * are templates like `{1}/{3}/{3}_{2}.png`, and URL encoding would turn the
+ * braces into %7B and %7D and break the substitution.
+ */
+async function loadCollection() {
+  const wtmlUrl = new URL("tempmaps/index_rel.wtml", document.baseURI).href;
+  const directory = wtmlUrl.replace(/[^/]*$/, "");
+
+  const absolute = (path: string) =>
+    /^(https?:)?\/\//.test(path) || path.startsWith("/") ? path : directory + path;
+
+  const patched = (await (await fetch(wtmlUrl)).text())
+    .replace(/(Url|ThumbnailUrl)="([^"]*)"/g, (_m, attr, path) => `${attr}="${absolute(path)}"`)
+    .replace(/<ThumbnailUrl>([^<]*)<\/ThumbnailUrl>/g,
+      (_m, path) => `<ThumbnailUrl>${absolute(path)}</ThumbnailUrl>`);
+
+  const blobUrl = URL.createObjectURL(new Blob([patched], { type: "application/xml" }));
+  try {
+    // No child folders in this document, so do not let the engine chase any
+    // against a blob URL that has no directory to resolve against.
+    await wwt.loadImageCollection(blobUrl, false);
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+/**
  * The globe the engine built for us at startup, kept so it can be put back.
  *
  * Restoring by name does not work: `startMode: "earth"` constructs the Blue
@@ -86,13 +124,8 @@ async function applyLayer(name: string) {
     }
     return;
   }
-  /* index_abs.wtml, not the index_rel.wtml the tiles shipped with. The engine
-     resolves the relative tile URLs against the page root, so they came out as
-     /ssp245_2030/... which Vite answers with index.html instead of a 404 --
-     the tiles "loaded" as HTML and nothing appeared. index_abs.wtml carries
-     /tempmaps/ prefixed paths and is generated from the original. */
   if (!collectionLoaded) {
-    await wwt.loadImageCollection("/tempmaps/index_abs.wtml", true);
+    await loadCollection();
     collectionLoaded = true;
   }
 

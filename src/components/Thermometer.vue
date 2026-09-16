@@ -106,7 +106,9 @@
     <div class="thermometer-readout">
       <div class="readout-primary">{{ temperature.toFixed(1) }}<span class="readout-unit">&deg;C</span></div>
       <div class="readout-secondary">
-        {{ anomaly >= 0 ? "+" : "&minus;" }}{{ Math.abs(anomaly).toFixed(2) }}&deg;C vs. baseline
+        <!-- A real minus character, not &minus;: inside an interpolation Vue
+             escapes the entity and prints it literally. -->
+        {{ anomaly >= 0 ? "+" : "−" }}{{ Math.abs(anomaly).toFixed(2) }}&deg;C vs. baseline
       </div>
     </div>
   </div>
@@ -125,8 +127,12 @@ const props = withDefaults(defineProps<{
   /** Top of the displayed scale, deg C. */
   max?: number;
 }>(), {
-  min: 10,
-  max: 40,
+  /* Narrowed from 10-40. The marsh used to jump to its final temperature the
+     moment the dropdown changed; now it ramps from 21.5 to at most 25.6, and on
+     a 30-degree scale that travel was under 7% of the column. This range still
+     contains every scenario, from the -2 case at 19.5 to the +4 case at 25.6. */
+  min: 18,
+  max: 28,
 });
 
 const anomaly = computed(() => props.temperature - props.baseline);
@@ -148,11 +154,18 @@ function yFor(value: number): number {
 const fillTop = computed(() => yFor(props.temperature));
 const baselineY = computed(() => yFor(props.baseline));
 
+/* Step chosen from the span rather than fixed at 5. On the old 10-40 scale a
+   5-degree step gave a sensible ladder; on the narrower scale it left a single
+   labelled tick. */
 const ticks = computed(() => {
+  const span = props.max - props.min;
+  const step = span > 20 ? 5 : 2;
+  const labelEvery = step * 2;
+
   const out: { value: number; y: number; major: boolean }[] = [];
-  const first = Math.ceil(props.min / 5) * 5;
-  for (let v = first; v <= props.max; v += 5) {
-    out.push({ value: v, y: yFor(v), major: v % 10 === 0 });
+  const first = Math.ceil(props.min / step) * step;
+  for (let v = first; v <= props.max; v += step) {
+    out.push({ value: v, y: yFor(v), major: v % labelEvery === 0 });
   }
   return out;
 });

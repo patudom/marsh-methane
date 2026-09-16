@@ -45,6 +45,17 @@ export interface ModelParams {
   /** How fast the surface approaches its equilibrium temperature, per year. */
   warmingResponseRate: number;
   /**
+   * Shape of the imposed warming between the start year and 2100.
+   *
+   * The user picks the warming that arrives *by 2100*, and this sets how it gets
+   * there: `imposed = target * (elapsed / total) ** exponent`. 1 is a straight
+   * line, 2 accelerates, which is closer to how emissions scenarios behave.
+   *
+   * A presentation choice, not a sourced quantity, in the same class as
+   * warmingResponseRate.
+   */
+  warmingRampExponent: number;
+  /**
    * How much of global warming the marsh actually feels. 1 means the marsh
    * warms exactly as fast as the global mean.
    */
@@ -142,6 +153,7 @@ export const PARAMS: ModelParams = {
      AR6 does not assess this ratio itself. Using TCR instead would give 0.46. */
   climateSensitivity: 0.76,
   warmingResponseRate: 0.3, // PLACEHOLDER: how fast the surface catches up
+  warmingRampExponent: 2, // PLACEHOLDER: accelerating rather than linear
   marshAmplification: 1.0,
   feedbackExaggeration: 1.0,
 };
@@ -189,8 +201,18 @@ export const GCREW_TREATMENTS: TreatmentPoint[] = [
 /** One simulated year of the feedback loop. */
 export interface YearState {
   year: number;
-  /** Global mean warming above the baseline state, deg C. */
+  /**
+   * Warming since the start year with the methane feedback included, deg C.
+   * This is what the marsh feels and what the right-hand globe reports.
+   */
   globalAnomalyC: number;
+  /**
+   * Warming since the start year *without* the methane feedback, deg C: the
+   * trajectory the user asked for and nothing else. The counterfactual line on
+   * the chart and the left-hand globe. At 2100 it equals the selected target
+   * exactly.
+   */
+  imposedAnomalyC: number;
   /** Marsh soil temperature, deg C. */
   marshTempC: number;
   /** CH4 flux out of the marsh, mg CH4 per m^2 per hour. */
@@ -255,7 +277,14 @@ function nonWetlandEmission(p: ModelParams): number {
   return (p.baselineCh4Ppb / p.ch4LifetimeYr) * p.tgPerPpb - p.baselineWetlandEmissionTgPerYr;
 }
 
-function describe(year: number, globalAnomalyC: number, ch4Ppb: number, p: ModelParams): YearState {
+function describe(
+  year: number,
+  imposedAnomalyC: number,
+  globalAnomalyC: number,
+  ch4Ppb: number,
+  p: ModelParams,
+): YearState {
+  // The marsh feels the total warming, feedback included.
   const marshTempC = p.baselineMarshTempC + p.marshAmplification * globalAnomalyC;
   const fluxMgPerM2PerHr = marshFlux(marshTempC, p);
   const fluxRatio = fluxMgPerM2PerHr / p.baselineFluxMgPerM2PerHr;
@@ -263,6 +292,7 @@ function describe(year: number, globalAnomalyC: number, ch4Ppb: number, p: Model
   return {
     year,
     globalAnomalyC,
+    imposedAnomalyC,
     marshTempC,
     fluxMgPerM2PerHr,
     fluxRatio,
@@ -276,25 +306,38 @@ function describe(year: number, globalAnomalyC: number, ch4Ppb: number, p: Model
 export interface RunOptions {
   /** Year the simulation starts at. */
   startYear?: number;
-  /** How many years to step. */
+  /**
+   * How many years to step. The default lands the final year on 2100, which is
+   * the year the dropdown, the globe labels and the impact anchors all name.
+   * It used to be 75, which ran to 2101 and quietly contradicted every label.
+   */
   years?: number;
   params?: ModelParams;
 }
 
 /**
- * Run the loop from a starting global temperature anomaly.
+ * Run the loop toward a target amount of warming by the final year.
  *
- * The user's "starting temperature" is an anomaly above the baseline state, so
- * 0 reproduces the baseline and the curve stays flat apart from the feedback.
+ * `targetDeltaTC` is the warming the user expects by 2100 relative to the start
+ * year, *excluding* the methane feedback. The run ramps toward it and the
+ * feedback is added on top, so each year carries both numbers: the
+ * counterfactual in `imposedAnomalyC` and the total in `globalAnomalyC`.
+ *
+ * A target of 0 gives a flat run: no ramp, so no extra marsh warming, so no
+ * extra methane, so no feedback.
  */
-export function runModel(startingAnomalyC: number, options: RunOptions = {}): YearState[] {
-  const { startYear = 2026, years = 75, params: p = PARAMS } = options;
+export function runModel(targetDeltaTC: number, options: RunOptions = {}): YearState[] {
+  const { startYear = 2026, years = 74, params: p = PARAMS } = options;
 
-  let anomaly = startingAnomalyC;
+  /** The imposed trajectory, evaluated exactly rather than integrated. */
+  const imposedAt = (i: number) =>
+    targetDeltaTC * Math.pow(i / years, p.warmingRampExponent);
+
+  let feedbackAnomaly = 0;
   let ch4 = p.baselineCh4Ppb;
   const other = nonWetlandEmission(p);
 
-  const states: YearState[] = [describe(startYear, anomaly, ch4, p)];
+  const states: YearState[] = [describe(startYear, 0, 0, ch4, p)];
 
   for (let i = 1; i <= years; i++) {
     const previous = states[i - 1];
@@ -303,20 +346,19 @@ export function runModel(startingAnomalyC: number, options: RunOptions = {}): Ye
     const emission = previous.wetlandEmissionTgPerYr + other;
     ch4 += emission / p.tgPerPpb - ch4 / p.ch4LifetimeYr;
 
-    // surface temperature relaxes toward the warming the new forcing implies,
-    // on top of whatever anomaly the user started with
-    const equilibrium = startingAnomalyC
-      + p.feedbackExaggeration * p.climateSensitivity * ch4Forcing(ch4, p);
-    anomaly += p.warmingResponseRate * (equilibrium - anomaly);
+    /* Only the feedback relaxes. Running the imposed ramp through the same
+       relaxation would make the total lag the ramp by roughly slope/rate --
+       about 0.18 degC at a 2 degC target, which is several times the feedback
+       itself, so the "with feedback" globe would read *lower* than the "without"
+       one. Keeping the ramp exact also means imposedAnomalyC hits the selected
+       target precisely in the final year. */
+    const feedbackEquilibrium =
+      p.feedbackExaggeration * p.climateSensitivity * ch4Forcing(ch4, p);
+    feedbackAnomaly += p.warmingResponseRate * (feedbackEquilibrium - feedbackAnomaly);
 
-    states.push(describe(startYear + i, anomaly, ch4, p));
+    const imposed = imposedAt(i);
+    states.push(describe(startYear + i, imposed, imposed + feedbackAnomaly, ch4, p));
   }
 
   return states;
 }
-
-/**
- * The baseline run, used as the "no extra warming" comparison line. Computed
- * once because it never changes.
- */
-export const BASELINE_RUN = runModel(0);

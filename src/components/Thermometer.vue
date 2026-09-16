@@ -2,7 +2,7 @@
   <div class="thermometer">
     <svg
       class="thermometer-svg"
-      viewBox="0 0 60 220"
+      viewBox="0 0 84 220"
       role="img"
       :aria-label="`Marsh temperature ${temperature.toFixed(1)} degrees Celsius`"
     >
@@ -73,14 +73,14 @@
       </g>
       <g
         fill="#cfe6ea"
-        font-size="9"
+        font-size="14.4"
         text-anchor="start"
       >
         <text
           v-for="tick in ticks.filter((t) => t.major)"
           :key="`label-${tick.value}`"
           x="52"
-          :y="tick.y + 3.2"
+          :y="tick.y + 5"
         >{{ tick.value }}</text>
       </g>
 
@@ -181,7 +181,7 @@ const ticks = computed(() => {
 
 .thermometer-svg {
   width: 100%;
-  max-width: 68px;
+  max-width: 104px;
   height: auto;
 }
 
@@ -191,20 +191,20 @@ const ticks = computed(() => {
 }
 
 .readout-primary {
-  font-size: 1.45rem;
+  font-size: 2.00rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #f2fbfd;
 }
 
 .readout-unit {
-  font-size: 0.85rem;
+  font-size: 1.15rem;
   font-weight: 500;
   margin-left: 0.1em;
 }
 
 .readout-secondary {
-  font-size: 0.72rem;
+  font-size: 1.15rem;
   color: #a8c4c9;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

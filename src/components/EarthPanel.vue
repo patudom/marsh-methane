@@ -165,40 +165,40 @@ watch(() => props.imagesetName, sendLayer);
 }
 
 .earth-label-temp {
-  font-size: 1.05rem;
+  font-size: 1.70rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .earth-label-scenario {
-  font-size: 0.62rem;
+  font-size: 0.99rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #8fa9ae;
 }
 
 .earth-layer-name {
-  font-size: 0.6rem;
+  font-size: 0.96rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #8fa9ae;
 }
 
 .earth-layer-value {
-  font-size: 0.9rem;
+  font-size: 1.50rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #f0a878;
 }
 
 .earth-layer-unit {
-  font-size: 0.6rem;
+  font-size: 0.96rem;
   font-weight: 400;
   color: #a8c4c9;
 }
 
 .earth-layer-note {
-  font-size: 0.56rem;
+  font-size: 0.90rem;
   font-style: italic;
   color: #7d949a;
 }

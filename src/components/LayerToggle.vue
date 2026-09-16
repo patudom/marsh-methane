@@ -57,7 +57,7 @@ const YEARS = [2026, 2100];
 }
 
 .layer-toggle-label {
-  font-size: 0.66rem;
+  font-size: 1.06rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #8fa9ae;

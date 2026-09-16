@@ -316,7 +316,7 @@ const formattedMolecules = computed(() => {
    the molecular flux does not fit on one line, so nowrap clipped the last
    characters against the card edge. */
 .readout-tertiary {
-  font-size: 0.66rem;
+  font-size: 1.06rem;
   color: #8fa9ae;
   font-variant-numeric: tabular-nums;
   line-height: 1.25;

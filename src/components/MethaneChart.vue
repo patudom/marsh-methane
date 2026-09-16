@@ -6,7 +6,7 @@
   <figure class="warming-chart">
     <figcaption class="chart-title">Warming since 2026</figcaption>
 
-    <!-- Legend in HTML rather than in the SVG: PAD_T is 12 units and there is
+    <!-- Legend in HTML rather than in the SVG: the viewBox has no spare rows and there is
          no room inside the viewBox for two rows of text. Mandatory at two
          series. -->
     <ul class="chart-legend">
@@ -41,8 +41,8 @@
         <text
           v-for="tick in yTicks"
           :key="`y-${tick.y}`"
-          :x="PAD_L - 6"
-          :y="tick.y + 3"
+          :x="PAD_L - 8"
+          :y="tick.y + 4.5"
           text-anchor="end"
         >{{ tick.label }}</text>
       </g>
@@ -51,7 +51,7 @@
           v-for="tick in xTicks"
           :key="`x-${tick.value}`"
           :x="tick.x"
-          :y="H - PAD_B + 13"
+          :y="H - PAD_B + 21"
           text-anchor="middle"
         >{{ tick.value }}</text>
       </g>
@@ -88,14 +88,14 @@
         <text
           class="series-end-label"
           :x="endPoint.x - 6"
-          :y="endPoint.y - 9"
+          :y="endPoint.y - 15"
           text-anchor="end"
         >{{ endPoint.total }}&deg;C</text>
         <text
           v-if="endPoint.gap"
           class="series-gap-label"
           :x="endPoint.x - 6"
-          :y="endPoint.y - 1"
+          :y="endPoint.y - 2"
           text-anchor="end"
         >{{ endPoint.gap }} from methane</text>
       </g>
@@ -139,11 +139,11 @@ const props = defineProps<{
 }>();
 
 const W = 320;
-const H = 150;
-const PAD_L = 38;
+const H = 172;
+const PAD_L = 48;
 const PAD_R = 12;
-const PAD_T = 12;
-const PAD_B = 22;
+const PAD_T = 18;
+const PAD_B = 32;
 
 /** Smallest span the y axis will show, deg C. Keeps a flat run legible. */
 const MIN_SPAN_C = 0.4;
@@ -311,7 +311,7 @@ const ariaLabel = computed(() => {
 }
 
 .chart-title {
-  font-size: 0.72rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--chart-ink);
 }
@@ -323,7 +323,7 @@ const ariaLabel = computed(() => {
   margin: 0.1rem 0 0.2rem;
   padding: 0;
   list-style: none;
-  font-size: 0.62rem;
+  font-size: 0.99rem;
   color: var(--chart-ink-muted);
 
   li {
@@ -366,7 +366,7 @@ const ariaLabel = computed(() => {
 
 .warming-chart .axis-label text {
   fill: var(--chart-ink-muted);
-  font-size: 8px;
+  font-size: 12.8px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -399,14 +399,14 @@ const ariaLabel = computed(() => {
 
 .series-end-label {
   fill: var(--chart-ink);
-  font-size: 9px;
+  font-size: 14.4px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .series-gap-label {
   fill: var(--chart-feedback);
-  font-size: 7.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -430,7 +430,7 @@ const ariaLabel = computed(() => {
   background: #0a1716;
   border: 1px solid rgba(143, 169, 174, 0.4);
   color: var(--chart-ink);
-  font-size: 0.68rem;
+  font-size: 1.09rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   pointer-events: none;

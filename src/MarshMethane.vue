@@ -309,12 +309,14 @@ body {
 
 /* The controls block sizes to its content and scrolls if the viewport is too
    short for it. The globes take what is left. */
+/* Widened from 16rem. Every caption in here grew by 60%, and at the old width
+   the impact note and the molecular flux both wrapped to four lines. */
 #controls-block {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  width: 16rem;
+  width: 25rem;
   min-height: 0;
   overflow-y: auto;
 }
@@ -386,7 +388,7 @@ body {
     align-items: flex-start;
 
     > * {
-      flex: 1 1 13rem;
+      flex: 1 1 20rem;
       min-width: 0;
     }
   }

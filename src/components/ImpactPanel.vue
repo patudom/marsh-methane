@@ -100,7 +100,7 @@ const formattedValue = computed(() => {
 }
 
 .impact-value {
-  font-size: 1.6rem;
+  font-size: 2.10rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -108,20 +108,20 @@ const formattedValue = computed(() => {
 }
 
 .impact-unit {
-  font-size: 0.7rem;
+  font-size: 1.12rem;
   color: #a8c4c9;
 }
 
 .impact-note {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 1.12rem;
   line-height: 1.25;
   color: #a8c4c9;
 }
 
 .impact-basis {
   margin: 0;
-  font-size: 0.66rem;
+  font-size: 1.06rem;
   line-height: 1.25;
   color: #8fa9ae;
   font-variant-numeric: tabular-nums;
@@ -129,14 +129,14 @@ const formattedValue = computed(() => {
 
 .impact-source {
   margin: 0;
-  font-size: 0.62rem;
+  font-size: 0.99rem;
   line-height: 1.25;
   color: #7d949a;
 }
 
 .impact-warning {
   margin: 0;
-  font-size: 0.62rem;
+  font-size: 0.99rem;
   font-style: italic;
   color: #d98a6a;
 }

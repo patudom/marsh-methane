@@ -100,7 +100,7 @@ const options = [
 }
 
 .panel-title {
-  font-size: 0.82rem;
+  font-size: 1.30rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -123,14 +123,14 @@ const options = [
 }
 
 .year-label {
-  font-size: 0.7rem;
+  font-size: 1.12rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #8fa9ae;
 }
 
 .year-value {
-  font-size: 1.3rem;
+  font-size: 1.90rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #f2fbfd;

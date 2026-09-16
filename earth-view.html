@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <title>Earth view</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/earthView-DL99HqEl.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-B5Qt9EMX.js">
+</head>
+
+<body>
+  <!-- Loaded in an iframe by the app, one per globe. See vite.config.mts for
+       why this is a separate page rather than a second component. -->
+  <div id="earth-mount" style="position:absolute;inset:0"></div>
+</body>
+
+</html>
